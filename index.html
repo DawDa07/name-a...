@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Name the Game</title>
+<style>
+  :root {
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --soft: #f9fafb;
+    --accent: #111827;
+    --good: #15803d;
+    --bad: #b91c1c;
+    --warn: #b45309;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #fff;
+    color: var(--text);
+    line-height: 1.45;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px 64px;
+  }
+  main { width: 100%; max-width: 560px; }
+  h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 0.8rem; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  p { margin: 0; }
+  .sub { color: var(--muted); margin-bottom: 28px; }
+  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+  input[type="text"], input[type="search"], input[type="number"] {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08); }
+  input:disabled { background: var(--soft); color: var(--muted); }
+  button {
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text);
+    border-radius: 10px;
+    padding: 11px 16px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--soft); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover:not(:disabled) { background: #374151; }
+  button.danger { color: var(--bad); border-color: #fecaca; }
+  button.link { border: none; background: none; color: var(--muted); padding: 6px 0; font-weight: 500; }
+  button.link:hover:not(:disabled) { background: none; color: var(--text); }
+  .row { display: flex; gap: 8px; }
+  .row > input { flex: 1; min-width: 0; }
+  .stack > * + * { margin-top: 16px; }
+  .hidden { display: none !important; }
+  .full { width: 100%; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.85rem; }
+  .error { color: var(--bad); font-size: 0.9rem; min-height: 1.3em; margin-top: 10px; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.85rem; margin: 20px 0; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .topbar .room { font-size: 0.85rem; color: var(--muted); }
+  .topbar .room strong { color: var(--text); letter-spacing: 0.15em; }
+  .conn { font-size: 0.8rem; color: var(--warn); }
+
+  .code-input { text-transform: uppercase; letter-spacing: 0.3em; font-weight: 700; text-align: center; }
+  .big-code { font-size: 3rem; font-weight: 800; letter-spacing: 0.25em; text-align: center; margin: 4px 0 12px; padding-left: 0.25em; }
+
+  .people { list-style: none; padding: 0; margin: 0; }
+  .people li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .people li:last-child { border-bottom: none; }
+  .badge { font-size: 0.72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+  .offline { color: var(--muted); font-style: italic; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { font-size: 0.8rem; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; background: #fff; }
+  .chip:hover { color: var(--text); border-color: #d1d5db; }
+
+  .topic-head { text-align: center; padding: 8px 0 4px; }
+  .topic-head .topic { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; word-break: break-word; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 0 20px; }
+  .pill { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.88rem; font-weight: 600; }
+  .pill.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .pill.out { text-decoration: line-through; color: var(--muted); font-weight: 400; }
+  .pill.away { opacity: 0.5; }
+
+  .turn { text-align: center; font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+  .timer-wrap { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .timer-bar { height: 100%; width: 100%; background: var(--accent); transition: width 0.1s linear; }
+  .timer-bar.low { background: var(--warn); }
+  .timer-bar.crit { background: var(--bad); }
+  .timer-text { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .event { text-align: center; min-height: 1.5em; margin-top: 12px; font-weight: 500; }
+  .event.good { color: var(--good); }
+  .event.bad { color: var(--bad); }
+  .event.info { color: var(--warn); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .actions button { flex: 1; min-width: 140px; }
+  .answers { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .answers li { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-size: 0.9rem; background: var(--soft); }
+  .answers li.latest { border-color: var(--accent); background: #fff; }
+  .answers .empty { border: none; background: none; color: var(--muted); padding: 0; }
+  .small-btn { padding: 6px 12px; font-size: 0.85rem; }
+  .footer { text-align: center; margin-top: 8px; }
+
+  .winner { text-align: center; padding: 12px 0; }
+  .winner .trophy { font-size: 3rem; }
+  .winner .name { font-size: 2rem; font-weight: 800; margin: 4px 0; }
+  .order { list-style: none; padding: 0; margin: 0; }
+  .order li { padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .order li:last-child { border-bottom: none; }
+  .order strong { color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- HOME -->
+  <section id="home">
+    <h1>Name the Game</h1>
+    <p class="sub">Pick a topic and take turns naming things in it. No repeats. If you can't think of one, you're out. Last one standing wins.</p>
+
+    <div class="card stack">
+      <div>
+        <label for="name-input">Your name</label>
+        <input id="name-input" type="text" maxlength="24" autocomplete="off" placeholder="e.g. Sam" />
+      </div>
+      <button id="create-btn" class="primary full" type="button">Host a new room</button>
+
+      <div class="divider">or join a friend</div>
+
+      <form id="join-form" class="row" autocomplete="off">
+        <input id="code-input" class="code-input" type="text" maxlength="4" placeholder="CODE" />
+        <button type="submit">Join</button>
+      </form>
+    </div>
+    <div id="home-error" class="error"></div>
+  </section>
+
+  <!-- LOBBY -->
+  <section id="lobby" class="hidden">
+    <div class="topbar">
+      <span class="room">Lobby <span id="lobby-conn" class="conn"></span></span>
+      <button class="link leave-btn" type="button">Leave</button>
+    </div>
+
+    <div class="card">
+      <h2>Room code</h2>
+      <div id="lobby-code" class="big-code"></div>
+      <div class="row">
+        <input id="share-link" type="text" readonly />
+        <button id="copy-btn" type="button">Copy link</button>
+      </div>
+      <p id="share-hint" class="muted small" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="card">
+      <h2>Players (<span id="lobby-count">0</span>)</h2>
+      <ul id="lobby-players" class="people"></ul>
+    </div>
+
+    <div id="host-setup" class="card stack hidden">
+      <div>
+        <label for="topic-input">Topic: type anything, or search the suggestions</label>
+        <div class="row">
+          <input id="topic-input" type="search" list="topic-suggestions" maxlength="60" placeholder="e.g. Cheeses, Dog breeds, Pokémon…" autocomplete="off" />
+          <button id="random-topic" type="button" title="Random topic">Random</button>
+        </div>
+        <datalist id="topic-suggestions"></datalist>
+        <div id="topic-chips" class="chips"></div>
+        <p class="muted small" style="margin-top:8px;">Answers are checked by AI (Google Gemini). Short names and small typos are fine.</p>
+      </div>
+      <div>
+        <label for="timer-input">Seconds per turn (0 = no timer)</label>
+        <input id="timer-input" type="number" min="0" max="300" step="1" value="15" />
+      </div>
+      <button id="start-btn" class="primary full" type="button">Start game</button>
+    </div>
+
+    <div id="guest-wait" class="card hidden">
+      <p class="muted" style="text-align:center;" id="guest-wait-text">Waiting for the host to pick a topic and start…</p>
+    </div>
+    <div id="lobby-error" class="error"></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="hidden">
+    <div class="topbar">
+      <span class="room">Room <strong id="game-code"></strong> <span id="game-conn" class="conn"></span></span>
+      <button id="pause-btn" class="small-btn hidden" type="button">Pause</button>
+    </div>
+
+    <div class="topic-head">
+      <div class="muted small">TOPIC</div>
+      <div id="topic-display" class="topic"></div>
+    </div>
+
+    <div id="pills" class="pills"></div>
+
+    <div class="card">
+      <div id="turn-text" class="turn"></div>
+      <div id="timer-block">
+        <div class="timer-wrap"><div id="timer-bar" class="timer-bar"></div></div>
+        <div id="timer-text" class="timer-text"></div>
+      </div>
+      <form id="answer-form" class="row" style="margin-top:14px;" autocomplete="off">
+        <input id="answer-input" type="text" maxlength="60" placeholder="Type your answer…" />
+        <button id="submit-btn" type="submit" class="primary">Submit</button>
+      </form>
+      <div id="event" class="event"></div>
+      <div id="giveup-row" class="actions">
+        <button id="giveup-btn" class="danger" type="button">I can't think of one</button>
+      </div>
+      <div id="game-error" class="error" style="text-align:center;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Named so far (<span id="answer-count">0</span>)</h2>
+      <ul id="answers" class="answers"></ul>
+    </div>
+
+    <div class="footer"><button class="link leave-btn" type="button">Leave game</button></div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="hidden">
+    <div class="topbar">
+      <span class="room">Room <strong id="results-code"></strong></span>
+      <button class="link leave-btn" type="button">Leave</button>
+    </div>
+
+    <div class="card winner">
+      <div class="trophy">🏆</div>
+      <div id="winner-name" class="name"></div>
+      <div id="winner-stats" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <h2>Finishing order</h2>
+      <ul id="order" class="order"></ul>
+    </div>
+
+    <div id="host-after" class="actions hidden">
+      <button id="rematch-btn" class="primary" type="button">Play again (same topic)</button>
+      <button id="to-lobby-btn" type="button">Back to lobby</button>
+    </div>
+    <p id="guest-after" class="muted hidden" style="text-align:center;">Waiting for the host…</p>
+    <div id="results-error" class="error" style="text-align:center;"></div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Everything that was named (<span id="final-count">0</span>)</h2>
+      <ul id="final-answers" class="answers"></ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const TOPICS = [
+    "Fruits", "Vegetables", "Countries", "US States", "Capital cities", "Animals",
+    "Dog breeds", "Car brands", "Board games", "Video games", "Pixar films",
+    "Disney characters", "Sports", "Musical instruments", "Colors", "Breakfast foods",
+    "Pizza toppings", "Superheroes", "Harry Potter characters", "Pokémon",
+    "Chemical elements", "Languages", "Fast food chains", "Cocktails", "Cheeses",
+    "Birds", "Fish", "Planets", "Painters", "Programming languages",
+    "Social media apps", "Sitcoms", "Olympic sports", "Insects", "NBA teams",
+    "NFL teams", "Dinosaurs", "Greek gods", "Cocktails", "Rivers",
+  ].filter((t, i, a) => a.indexOf(t) === i);
+
+  const $ = (id) => document.getElementById(id);
+  const STORE = "ntg:";
+
+  let session = null;       // { code, token, playerId }
+  let stream = null;
+  let state = null;
+  let stateAt = 0;
+  let lastTurnKey = "";
+  let lastErrorTimer = null;
+
+  // ---------- Helpers ----------
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function post(path, body) {
+    let res;
+    try {
+      res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    } catch {
+      throw new Error("Couldn't reach the game server.");
+    }
+    let data = null;
+    try { data = await res.json(); } catch { /* not JSON */ }
+    if (!res.ok) throw new Error((data && data.error) || `Server error (HTTP ${res.status})`);
+    return data;
+  }
+
+  function act(type, extra) {
+    return post(`/api/rooms/${session.code}/action`, { token: session.token, type, ...extra });
+  }
+
+  function flashError(id, message) {
+    const el = $(id);
+    el.textContent = message;
+    clearTimeout(lastErrorTimer);
+    lastErrorTimer = setTimeout(() => { el.textContent = ""; }, 5000);
+  }
+
+  function show(id) {
+    for (const s of ["home", "lobby", "game", "results"]) $(s).classList.toggle("hidden", s !== id);
+  }
+
+  function me() {
+    return state && state.players.find((p) => p.id === state.you);
+  }
+
+  function isHost() {
+    return state && state.hostId === state.you;
+  }
+
+  function nameOf(id) {
+    const p = state.players.find((x) => x.id === id);
+    return p ? p.name : "?";
+  }
+
+  // ---------- Session ----------
+  // Per-tab, so a refresh rejoins as the same player but two tabs can be two players.
+  function saveSession() {
+    sessionStorage.setItem(STORE + session.code, JSON.stringify(session));
+  }
+
+  function connect() {
+    if (stream) stream.close();
+    history.replaceState(null, "", `?room=${session.code}`);
+    stream = new EventSource(`/api/rooms/${session.code}/events?token=${encodeURIComponent(session.token)}`);
+    stream.onmessage = (e) => {
+      state = JSON.parse(e.data);
+      stateAt = performance.now();
+      setConnected(true);
+      render();
+    };
+    stream.onerror = () => setConnected(false);
+    stream.addEventListener("gone", (e) => {
+      let msg = "You left the room.";
+      try { msg = JSON.parse(e.data).error; } catch { /* keep default */ }
+      goHome(msg);
+    });
+  }
+
+  function setConnected(ok) {
+    const text = ok ? "" : "· reconnecting…";
+    $("lobby-conn").textContent = text;
+    $("game-conn").textContent = text;
+  }
+
+  function goHome(message) {
+    if (stream) stream.close();
+    stream = null;
+    if (session) sessionStorage.removeItem(STORE + session.code);
+    session = null;
+    state = null;
+    lastTurnKey = "";
+    history.replaceState(null, "", location.pathname);
+    show("home");
+    $("home-error").textContent = message || "";
+  }
+
+  async function enterRoom(path, body) {
+    const name = $("name-input").value.trim();
+    if (!name) { $("home-error").textContent = "Enter your name first."; $("name-input").focus(); return; }
+    localStorage.setItem(STORE + "name", name);
+    $("home-error").textContent = "";
+    try {
+      const data = await post(path, { ...body, name });
+      session = { code: data.code, token: data.token, playerId: data.playerId };
+      saveSession();
+      connect();
+    } catch (err) {
+      $("home-error").textContent = err.message;
+    }
+  }
+
+  // ---------- Home ----------
+  $("create-btn").addEventListener("click", async () => {
+    const btn = $("create-btn");
+    btn.disabled = true;
+    await enterRoom("/api/rooms", {});
+    btn.disabled = false;
+  });
+
+  $("join-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const code = $("code-input").value.trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(code)) { $("home-error").textContent = "Room codes are 4 letters."; return; }
+    enterRoom(`/api/rooms/${code}/join`, {});
+  });
+
+  $("code-input").addEventListener("input", (e) => {
+    e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+  });
+
+  for (const btn of document.querySelectorAll(".leave-btn")) {
+    btn.addEventListener("click", async () => {
+      if (!session) return goHome();
+      if (state && state.phase === "playing" && !confirm("Leave the game? You'll be out.")) return;
+      try { await act("leave"); } catch { /* leaving anyway */ }
+      goHome();
+    });
+  }
+
+  // ---------- Render ----------
+  function render() {
+    if (!state) return;
+    if (state.phase === "lobby") renderLobby();
+    else if (state.phase === "playing") renderGame();
+    else renderResults();
+  }
+
+  function shareUrl() {
+    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(location.hostname);
+    const origin = local && state.lanOrigin ? state.lanOrigin : location.origin;
+    return `${origin}/?room=${state.code}`;
+  }
+
+  function renderLobby() {
+    show("lobby");
+    $("lobby-code").textContent = state.code;
+    const url = shareUrl();
+    if ($("share-link").value !== url) $("share-link").value = url;
+    const local = ["localhost", "127.0.0.1"].includes(location.hostname);
+    $("share-hint").textContent = local
+      ? "This link works for people on the same Wi-Fi. For friends elsewhere, host the server publicly (see README)."
+      : "Send this link or the code to your friends.";
+
+    const list = $("lobby-players");
+    list.innerHTML = "";
+    for (const p of state.players) {
+      const li = document.createElement("li");
+      const badges = (p.id === state.hostId ? `<span class="badge">host</span>` : "") + (p.id === state.you ? `<span class="badge">you</span>` : "");
+      li.innerHTML = `<span class="${p.connected ? "" : "offline"}">${escapeHtml(p.name)}${badges}</span><span class="muted small">${p.connected ? "" : "offline"}</span>`;
+      list.appendChild(li);
+    }
+    $("lobby-count").textContent = state.players.length;
+
+    const host = isHost();
+    $("host-setup").classList.toggle("hidden", !host);
+    $("guest-wait").classList.toggle("hidden", host);
+    if (host) {
+      if (!$("topic-input").value && state.topic) $("topic-input").value = state.topic;
+      const btn = $("start-btn");
+      btn.disabled = state.starting || state.players.length < 2;
+      btn.textContent = state.starting ? "Checking topic…" : state.players.length < 2 ? "Waiting for at least 2 players…" : "Start game";
+    } else {
+      $("guest-wait-text").textContent = state.starting
+        ? "The host is starting the game…"
+        : `Waiting for ${nameOf(state.hostId)} to pick a topic and start…`;
+    }
+  }
+
+  function renderPills() {
+    const box = $("pills");
+    box.innerHTML = "";
+    for (const p of state.players) {
+      const el = document.createElement("span");
+      el.className = "pill" + (p.out ? " out" : "") + (p.id === state.currentId ? " active" : "") + (p.connected ? "" : " away");
+      el.textContent = p.name + (p.id === state.you ? " (you)" : "");
+      el.title = p.connected ? "" : "Disconnected";
+      box.appendChild(el);
+    }
+  }
+
+  function renderAnswers(listId, countId) {
+    const list = $(listId);
+    list.innerHTML = "";
+    $(countId).textContent = state.answers.length;
+    if (state.answers.length === 0) {
+      list.innerHTML = `<li class="empty">Nothing yet.</li>`;
+      return;
+    }
+    state.answers.forEach((a, i) => {
+      const li = document.createElement("li");
+      if (i === state.answers.length - 1) li.classList.add("latest");
+      const details = [`${a.by}`];
+      if (a.description) details.push(a.description);
+      if (a.typed.toLowerCase() !== a.title.toLowerCase()) details.push(`typed “${a.typed}”`);
+      li.title = details.join(" · ");
+      li.textContent = a.title;
+      list.appendChild(li);
+    });
+  }
+
+  function renderGame() {
+    show("game");
+    const host = isHost();
+    const mine = state.currentId === state.you;
+    const current = nameOf(state.currentId);
+
+    $("game-code").textContent = state.code;
+    $("topic-display").textContent = state.topic;
+    renderPills();
+
+    let turn;
+    if (state.checking) turn = `${me() && state.checking.by === me().name ? "You" : state.checking.by} said “${state.checking.typed}”. Checking…`;
+    else if (state.paused) turn = "Paused by the host";
+    else if (mine) turn = "Your turn! Name one.";
+    else if (me() && me().out) turn = `You're out. ${current}'s turn.`;
+    else turn = `${current}'s turn`;
+    $("turn-text").textContent = turn;
+
+    $("timer-block").classList.toggle("hidden", state.seconds === 0);
+
+    const canType = mine && !state.checking && !state.paused;
+    const input = $("answer-input");
+    const turnKey = `${state.currentId}:${state.answers.length}:${state.eliminated.length}`;
+    if (turnKey !== lastTurnKey) {
+      lastTurnKey = turnKey;
+      input.value = "";
+    }
+    const wasDisabled = input.disabled;
+    input.disabled = !canType;
+    $("submit-btn").disabled = !canType;
+    input.placeholder = mine ? "Type your answer…" : `Waiting for ${current}…`;
+    if (canType && wasDisabled) { input.focus(); input.select(); }
+    $("giveup-row").classList.toggle("hidden", !mine);
+    $("giveup-btn").disabled = !canType;
+
+    const ev = $("event");
+    ev.textContent = state.event ? state.event.text : "";
+    ev.className = "event " + (state.event ? state.event.kind : "");
+
+    const pause = $("pause-btn");
+    pause.classList.toggle("hidden", !host || state.seconds === 0);
+    pause.textContent = state.paused ? "Resume" : "Pause";
+    pause.disabled = !!state.checking;
+
+    renderAnswers("answers", "answer-count");
+    drawTimer();
+  }
+
+  function renderResults() {
+    show("results");
+    $("results-code").textContent = state.code;
+    $("winner-name").textContent = state.winner || "Nobody";
+    const n = state.answers.length;
+    $("winner-stats").textContent = `wins “${state.topic}” · ${n} thing${n === 1 ? "" : "s"} named`;
+    const order = $("order");
+    order.innerHTML = "";
+    if (state.winner) {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>1. ${escapeHtml(state.winner)}</strong>: winner`;
+      order.appendChild(li);
+    }
+    [...state.eliminated].reverse().forEach((e, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${i + 2}. ${escapeHtml(e.name)}</strong>: ${escapeHtml(e.reason)}`;
+      order.appendChild(li);
+    });
+    $("host-after").classList.toggle("hidden", !isHost());
+    $("guest-after").classList.toggle("hidden", isHost());
+    $("guest-after").textContent = `Waiting for ${nameOf(state.hostId)}…`;
+    renderAnswers("final-answers", "final-count");
+  }
+
+  // ---------- Timer display ----------
+  function drawTimer() {
+    if (!state || state.phase !== "playing" || state.seconds === 0) return;
+    const t = state.timer;
+    const elapsed = t.running ? performance.now() - stateAt : 0;
+    const left = Math.max(0, t.remainingMs - elapsed);
+    const frac = t.totalMs ? left / t.totalMs : 0;
+    const bar = $("timer-bar");
+    bar.style.width = (frac * 100).toFixed(1) + "%";
+    bar.classList.toggle("low", frac <= 0.5 && frac > 0.25);
+    bar.classList.toggle("crit", frac <= 0.25);
+    $("timer-text").textContent = (left / 1000).toFixed(1) + "s";
+  }
+  setInterval(drawTimer, 100);
+
+  // ---------- Lobby actions ----------
+  function renderChips() {
+    const box = $("topic-chips");
+    box.innerHTML = "";
+    for (const t of [...TOPICS].sort(() => Math.random() - 0.5).slice(0, 6)) {
+      const c = document.createElement("button");
+      c.type = "button";
+      c.className = "chip";
+      c.textContent = t;
+      c.addEventListener("click", () => { $("topic-input").value = t; });
+      box.appendChild(c);
+    }
+  }
+
+  $("random-topic").addEventListener("click", () => {
+    $("topic-input").value = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+    renderChips();
+  });
+
+  $("copy-btn").addEventListener("click", async () => {
+    const link = $("share-link").value;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      $("share-link").select();
+      document.execCommand("copy");
+    }
+    $("copy-btn").textContent = "Copied!";
+    setTimeout(() => { $("copy-btn").textContent = "Copy link"; }, 1500);
+  });
+
+  $("start-btn").addEventListener("click", async () => {
+    const topic = $("topic-input").value.trim();
+    if (!topic) return flashError("lobby-error", "Pick a topic.");
+    const seconds = Number($("timer-input").value);
+    if (!Number.isInteger(seconds) || seconds < 0 || seconds > 300) {
+      return flashError("lobby-error", "Seconds per turn must be a whole number from 0 to 300.");
+    }
+    $("lobby-error").textContent = "";
+    try {
+      await act("start", { topic, seconds });
+    } catch (err) {
+      flashError("lobby-error", err.message);
+    }
+  });
+
+  // ---------- Game actions ----------
+  $("answer-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const answer = $("answer-input").value.trim();
+    if (!answer) return;
+    try {
+      await act("answer", { answer });
+    } catch (err) {
+      flashError("game-error", err.message);
+    }
+  });
+
+  function bindAction(id, type, errorId, confirmText) {
+    $(id).addEventListener("click", async () => {
+      if (confirmText && !confirm(confirmText())) return;
+      try {
+        await act(type);
+      } catch (err) {
+        flashError(errorId, err.message);
+      }
+    });
+  }
+
+  bindAction("giveup-btn", "giveup", "game-error", () => "Give up? You'll be out.");
+  $("pause-btn").addEventListener("click", async () => {
+    try {
+      await act(state.paused ? "resume" : "pause");
+    } catch (err) {
+      flashError("game-error", err.message);
+    }
+  });
+  $("rematch-btn").addEventListener("click", async () => {
+    try {
+      await act("start", {});
+    } catch (err) {
+      flashError("results-error", err.message);
+    }
+  });
+  bindAction("to-lobby-btn", "lobby", "results-error");
+
+  // ---------- Init ----------
+  const datalist = $("topic-suggestions");
+  for (const t of [...TOPICS].sort((a, b) => a.localeCompare(b))) {
+    const opt = document.createElement("option");
+    opt.value = t;
+    datalist.appendChild(opt);
+  }
+  renderChips();
+  $("name-input").value = localStorage.getItem(STORE + "name") || "";
+
+  const roomParam = (new URLSearchParams(location.search).get("room") || "").toUpperCase();
+  if (/^[A-Z]{4}$/.test(roomParam)) {
+    const saved = sessionStorage.getItem(STORE + roomParam);
+    if (saved) {
+      try {
+        session = JSON.parse(saved);
+        connect();
+      } catch {
+        sessionStorage.removeItem(STORE + roomParam);
+      }
+    }
+    if (!session) {
+      $("code-input").value = roomParam;
+      $("home-error").textContent = "";
+      (localStorage.getItem(STORE + "name") ? $("code-input") : $("name-input")).focus();
+    }
+  }
+})();
+</script>
+</body>
+</html>
