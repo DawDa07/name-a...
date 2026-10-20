@@ -1,7 +1,7 @@
 "use strict";
 
 // Live checks against Gemini. Skipped unless GEMINI_API_KEY is set (in the environment or .env).
-const { test } = require("node:test");
+const { test, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -13,6 +13,9 @@ try {
 
 const { checkAnswer, checkTopic } = require("../lib/judge");
 const skip = !process.env.GEMINI_API_KEY && "set GEMINI_API_KEY to run live Gemini checks";
+
+// Stay under the free tier's requests-per-minute limit.
+afterEach(() => !skip && new Promise((r) => setTimeout(r, 4000)));
 
 const cases = [
   ["Car brands", "Ford", [], "correct"],
@@ -36,6 +39,25 @@ for (const [topic, answer, used, expected] of cases) {
   test(`${topic}: "${answer}" is ${expected}`, { skip }, async () => {
     const res = await checkAnswer(topic, answer, used);
     assert.equal(res.result, expected, JSON.stringify(res));
+  });
+}
+
+// Rejections are shown to everyone, so they mustn't hand out answers.
+const noHints = [
+  ["Countries", "Korea", /north|south|did you mean/i, /specific/i],
+  ["US presidents", "Roosevelt", /theodore|franklin|did you mean/i, /specific/i],
+  ["US presidents", "Bush", /george|w\.|did you mean/i, /specific/i],
+  ["Countries", "Brzlnia", /brazil|did you mean/i, null],
+  ["Car brands", "Toyata Motorz Corp Ltd X", /toyota|did you mean/i, null],
+];
+
+for (const [topic, answer, forbidden, required] of noHints) {
+  test(`${topic}: rejecting "${answer}" gives no hints`, { skip }, async () => {
+    const res = await checkAnswer(topic, answer, []);
+    if (res.result === "correct") return; // close enough to accept is also fine for typos
+    assert.equal(res.result, "incorrect", JSON.stringify(res));
+    assert.doesNotMatch(res.reason, forbidden);
+    if (required) assert.match(res.reason, required);
   });
 }
 
