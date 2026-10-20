@@ -289,6 +289,8 @@
 
   const $ = (id) => document.getElementById(id);
   const STORE = "ntg:";
+  // GitHub Pages only hosts this page; the game server runs on Cloudflare (see README).
+  const API_BASE = location.hostname.endsWith("github.io") ? "https://name-the-game.da-daw648.workers.dev" : "";
 
   let session = null;       // { code, token, playerId }
   let stream = null;
@@ -305,7 +307,7 @@
   async function post(path, body) {
     let res;
     try {
-      res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      res = await fetch(API_BASE + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     } catch {
       throw new Error("Couldn't reach the game server.");
     }
@@ -352,19 +354,45 @@
   function connect() {
     if (stream) stream.close();
     history.replaceState(null, "", `?room=${session.code}`);
-    stream = new EventSource(`/api/rooms/${session.code}/events?token=${encodeURIComponent(session.token)}`);
-    stream.onmessage = (e) => {
-      state = JSON.parse(e.data);
-      stateAt = performance.now();
-      setConnected(true);
-      render();
-    };
+    const path = `/api/rooms/${session.code}/events?token=${encodeURIComponent(session.token)}`;
+    if (API_BASE) connectSocket(API_BASE.replace(/^http/, "ws") + path);
+    else connectEvents(path);
+  }
+
+  function receive(data) {
+    state = data;
+    stateAt = performance.now();
+    setConnected(true);
+    render();
+  }
+
+  // Local server: Server-Sent Events, which reconnect by themselves.
+  function connectEvents(path) {
+    stream = new EventSource(path);
+    stream.onmessage = (e) => receive(JSON.parse(e.data));
     stream.onerror = () => setConnected(false);
     stream.addEventListener("gone", (e) => {
       let msg = "You left the room.";
       try { msg = JSON.parse(e.data).error; } catch { /* keep default */ }
       goHome(msg);
     });
+  }
+
+  // Cloudflare server: a WebSocket, reopened after drops until we leave the room.
+  function connectSocket(url) {
+    const ws = new WebSocket(url);
+    stream = ws;
+    ws.onmessage = (e) => {
+      if (e.data === "ping") return;
+      const msg = JSON.parse(e.data);
+      if ("gone" in msg) goHome(msg.gone);
+      else receive(msg);
+    };
+    ws.onclose = () => {
+      if (stream !== ws) return;
+      setConnected(false);
+      setTimeout(() => { if (stream === ws) connectSocket(url); }, 2000);
+    };
   }
 
   function setConnected(ok) {
@@ -439,7 +467,7 @@
   function shareUrl() {
     const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(location.hostname);
     const origin = local && state.lanOrigin ? state.lanOrigin : location.origin;
-    return `${origin}/?room=${state.code}`;
+    return `${origin}${location.pathname}?room=${state.code}`;
   }
 
   function renderLobby() {

@@ -26,9 +26,24 @@ Open http://localhost:3000, enter your name and click **Host a new room**. Share
 ## Letting friends join
 
 - **Same Wi-Fi:** the lobby's share link already uses your computer's local network address (also printed when the server starts).
-- **Anywhere else:** the server has to be reachable from the internet. Either:
-  - run a free tunnel next to `npm start`, e.g. `cloudflared tunnel --url http://localhost:3000` (Cloudflare, no account needed) or `npx localtunnel --port 3000`, and share the URL it prints; or
-  - deploy the folder to any Node host (Render, Railway, Fly.io…). The server reads `PORT` and `GEMINI_API_KEY` from the environment.
+- **Anywhere:** host it on GitHub Pages + Cloudflare (below), or deploy `server.js` to any Node host (Render, Railway, Fly.io…; it reads `PORT` and `GEMINI_API_KEY` from the environment).
+
+## Hosting on GitHub Pages + Cloudflare (free)
+
+GitHub Pages can only serve `index.html`; the game server (rooms, turns, the hidden Gemini key) runs as a Cloudflare Worker (`worker/index.js`, same game code as `server.js`, with live updates over WebSockets).
+
+1. Deploy the server (free Cloudflare account, no card):
+
+   ```sh
+   npx wrangler login
+   npx wrangler secret bulk .env     # uploads GEMINI_API_KEY as a secret
+   npm run deploy                    # prints https://name-the-game.<you>.workers.dev
+   ```
+
+2. In `index.html`, set `API_BASE` to that workers.dev URL, commit and push.
+3. On GitHub: repo **Settings → Pages → Build and deployment**: source **Deploy from a branch**, branch `main`, folder `/ (root)`. The game is then at `https://<user>.github.io/name-the-game/`.
+
+Run `npm run deploy` again after changing anything in `lib/` or `worker/`. All rooms live in memory in one Durable Object, so a deploy ends any games in progress. `npx wrangler dev` runs the worker locally on port 8787.
 
 ## How it works
 
@@ -45,4 +60,4 @@ The model defaults to `gemini-flash-lite-latest` (about 1 second per check). `GE
 npm test
 ```
 
-Plays a full 3-player game over HTTP against a real server (using an offline stand-in judge), and runs live Gemini answer checks if `GEMINI_API_KEY` is set.
+Plays a full 3-player game over HTTP against a real server (using an offline stand-in judge), and runs live Gemini answer checks if `GEMINI_API_KEY` is set. To run the game test against the Cloudflare worker instead: `npx wrangler dev --var NTG_FAKE_JUDGE:1` in one terminal, then `TEST_BASE=http://localhost:8787 node --test test/rooms.test.js`.

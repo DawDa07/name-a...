@@ -6,11 +6,13 @@ const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 
+// TEST_BASE runs against an already running server instead, e.g. the Cloudflare worker under `wrangler dev`.
 const PORT = 3999;
-const BASE = `http://localhost:${PORT}`;
+const BASE = process.env.TEST_BASE || `http://localhost:${PORT}`;
 let server;
 
 before(async () => {
+  if (process.env.TEST_BASE) return;
   server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
     env: { ...process.env, PORT: String(PORT), NTG_FAKE_JUDGE: "1" },
     stdio: ["ignore", "pipe", "inherit"],
@@ -18,7 +20,7 @@ before(async () => {
   await new Promise((resolve) => server.stdout.once("data", resolve));
 });
 
-after(() => server.kill());
+after(() => server?.kill());
 
 async function post(p, body) {
   const res = await fetch(BASE + p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -27,6 +29,22 @@ async function post(p, body) {
 
 // Keeps the latest state pushed to one player.
 function watch(code, token) {
+  return process.env.TEST_BASE ? watchSocket(code, token) : watchEvents(code, token);
+}
+
+function watchSocket(code, token) {
+  const ws = new WebSocket(`${BASE.replace(/^http/, "ws")}/api/rooms/${code}/events?token=${encodeURIComponent(token)}`);
+  const w = { state: null, gone: null, close: () => ws.close() };
+  ws.onmessage = (e) => {
+    if (e.data === "ping") return;
+    const msg = JSON.parse(e.data);
+    if ("gone" in msg) w.gone = msg.gone;
+    else w.state = msg;
+  };
+  return w;
+}
+
+function watchEvents(code, token) {
   const ctrl = new AbortController();
   const w = { state: null, gone: null, close: () => ctrl.abort() };
   (async () => {

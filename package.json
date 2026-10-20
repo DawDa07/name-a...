@@ -2,11 +2,12 @@
   "name": "name-the-game",
   "version": "1.0.0",
   "private": true,
-  "description": "Pass-and-play party game: name things in a topic until someone can't. Answers are checked against Wikipedia.",
+  "description": "Online party game: name things in a topic until someone can't. Answers are judged by Google Gemini.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "deploy": "npx --yes wrangler@4 deploy"
   },
   "engines": {
     "node": ">=18"

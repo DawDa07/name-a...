@@ -56,6 +56,34 @@ function readJson(req) {
   });
 }
 
+function eventStream(res) {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.write("retry: 2000\n\n");
+  res.on("error", () => {});
+  return {
+    get ended() {
+      return res.writableEnded;
+    },
+    send(data) {
+      res.write(`data: ${data}\n\n`);
+    },
+    ping() {
+      res.write(": ping\n\n");
+    },
+    end() {
+      res.end();
+    },
+    onClose(fn) {
+      res.on("close", fn);
+    },
+  };
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
@@ -81,16 +109,17 @@ async function handle(req, res) {
   const code = parts[2];
   const sub = parts[3];
 
-  // GET /api/rooms/:code/events?token= -> live state stream
+  // GET /api/rooms/:code/events?token= -> live state stream (Server-Sent Events)
   if (sub === "events" && req.method === "GET") {
     let room, player;
     try {
       room = rooms.getRoom(code);
       player = rooms.auth(room, url.searchParams.get("token") || "");
     } catch (err) {
-      return rooms.sendGone(res, err.message);
+      res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache" });
+      return res.end(`event: gone\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
     }
-    return rooms.attachClient(room, player, res);
+    return rooms.attachClient(room, player, eventStream(res));
   }
 
   if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
